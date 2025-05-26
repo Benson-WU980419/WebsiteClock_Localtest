@@ -4,14 +4,8 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
   <title>iPhone 時鐘</title>
-  <link rel="manifest" href="manifest.json" />
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Major+Mono+Display&display=swap" />
-  <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <meta name="apple-mobile-web-app-title" content="時鐘">
-  <link rel="apple-touch-icon" href="https://raw.githubusercontent.com/Benson-WU980419/ClockWebsite_TWtime/refs/heads/main/clockwebsite_twtime_icon.png">
-  <link rel="icon" href="https://raw.githubusercontent.com/Benson-WU980419/ClockWebsite_TWtime/refs/heads/main/clockwebsite_twtime_icon.png" type="image/png">
+  <link href="https://fonts.googleapis.com/css2?family=Major+Mono+Display&display=swap" rel="stylesheet">
+
   <style>
     body {
       background-color: black;
@@ -27,6 +21,7 @@
       user-select: none;
       padding: env(safe-area-inset);
     }
+
     #time {
       font-size: 15vw;
       text-align: center;
@@ -36,11 +31,19 @@
       line-height: 1;
       white-space: nowrap;
     }
+
     #message {
       font-size: 3.5vw;
       color: rgba(255, 255, 255, 0.6);
       margin-top: 3vh;
       text-align: center;
+      opacity: 1;
+      transition: opacity 1s ease;
+    }
+
+    /* 消失時用的 class */
+    .fade-out {
+      opacity: 0;
     }
   </style>
 </head>
@@ -49,29 +52,63 @@
   <div id="message">此時間以本地時間校準</div>
 
   <script>
-    function updateTime() {
-      const now = new Date();
-      const hh = now.getHours().toString().padStart(2, '0');
-      const mm = now.getMinutes().toString().padStart(2, '0');
-      const ss = now.getSeconds().toString().padStart(2, '0');
-      document.getElementById('time').textContent = `${hh}：${mm}：${ss}`;
-      const delay = 1000 - (Date.now() % 1000);
-      setTimeout(updateTime, delay);
-    }
+    class NTPClock {
+      constructor(timeId, messageId) {
+        this.timeElement = document.getElementById(timeId);
+        this.messageElement = document.getElementById(messageId);
+        this.defaultOffset = 8 * 60 * 60 * 1000;
+        this.offset = parseInt(localStorage.getItem('tz_offset')) || this.defaultOffset;
+        this.ntpDelta = 0;
+      }
 
-    function applyAntiBurnIn() {
-      const dx = (Math.random() * 2 - 1) * 1.5;
-      const dy = (Math.random() * 2 - 1) * 1.5;
-      document.getElementById('time').style.transform = `translate(${dx}vw, ${dy}vh)`;
+      applyAntiBurnIn() {
+        const dx = (Math.random() * 2 - 1) * 1.5;
+        const dy = (Math.random() * 2 - 1) * 1.5;
+        this.timeElement.style.transform = `translate(${dx}vw, ${dy}vh)`;
+      }
+
+      updateTime() {
+        const now = Date.now() + this.ntpDelta + this.offset;
+        const date = new Date(now);
+
+        const hh = date.getUTCHours().toString().padStart(2, '0');
+        const mm = date.getUTCMinutes().toString().padStart(2, '0');
+        const ss = date.getUTCSeconds().toString().padStart(2, '0');
+
+        this.timeElement.textContent = `${hh}：${mm}：${ss}`;
+
+        const delay = 1000 - (Date.now() % 1000);
+        setTimeout(() => this.updateTime(), delay);
+      }
+
+      saveOffset(offsetMs) {
+        localStorage.setItem('tz_offset', offsetMs.toString());
+        this.offset = offsetMs;
+      }
+
+      init() {
+        this.updateTime();
+        this.applyAntiBurnIn();
+        setInterval(() => this.applyAntiBurnIn(), 10000);
+
+        // 讓「此時間以本地時間校準」訊息在 5 秒後淡出消失
+        setTimeout(() => {
+          this.messageElement.classList.add('fade-out');
+        }, 5000);
+
+        // 完全消失後隱藏該元素（避免影響排版）
+        setTimeout(() => {
+          this.messageElement.style.display = 'none';
+        }, 6000);
+      }
     }
 
     document.addEventListener("DOMContentLoaded", () => {
-      updateTime();
-      applyAntiBurnIn();
-      setInterval(applyAntiBurnIn, 10000);
-      if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.register('sw.js');
+      const clock = new NTPClock("time", "message");
+      if (!localStorage.getItem("tz_offset")) {
+        clock.saveOffset(8 * 60 * 60 * 1000);
       }
+      clock.init();
     });
   </script>
 </body>
