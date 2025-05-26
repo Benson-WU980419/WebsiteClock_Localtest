@@ -4,9 +4,11 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
   <title>iPhone 時鐘</title>
+  <!-- 載入字型 -->
   <link href="https://fonts.googleapis.com/css2?family=Major+Mono+Display&display=swap" rel="stylesheet">
 
   <style>
+    /* 全局樣式 */
     body {
       background-color: black;
       color: white;
@@ -22,16 +24,21 @@
       padding: env(safe-area-inset);
     }
 
+    /* 時鐘字體及顏色設定 */
     #time {
       font-size: 15vw;
       text-align: center;
       color: #FF8C00;
-      text-shadow: 0 0 5px rgba(255, 140, 0, 0.8), 0 0 15px rgba(255, 140, 0, 0.6), 0 0 30px rgba(255, 140, 0, 0.4);
+      text-shadow:
+        0 0 5px rgba(255, 140, 0, 0.8),
+        0 0 15px rgba(255, 140, 0, 0.6),
+        0 0 30px rgba(255, 140, 0, 0.4);
       transition: transform 5s ease-in-out;
       line-height: 1;
       white-space: nowrap;
     }
 
+    /* 本地時間校準訊息 */
     #message {
       font-size: 3.5vw;
       color: rgba(255, 255, 255, 0.6);
@@ -42,14 +49,17 @@
       will-change: opacity;
     }
 
-    /* 消失時用的 class */
+    /* 用於淡出訊息 */
     .fade-out {
       opacity: 0;
     }
   </style>
 </head>
 <body>
+  <!-- 時鐘顯示區 -->
   <div id="time"></div>
+
+  <!-- 顯示本地時間校準訊息 -->
   <div id="message">此時間以本地時間校準</div>
 
   <script>
@@ -57,57 +67,64 @@
       constructor(timeId, messageId) {
         this.timeElement = document.getElementById(timeId);
         this.messageElement = document.getElementById(messageId);
-        this.defaultOffset = 8 * 60 * 60 * 1000;
+        this.defaultOffset = 8 * 60 * 60 * 1000; // 預設時區偏移(台北為 UTC+8)
         this.offset = parseInt(localStorage.getItem('tz_offset')) || this.defaultOffset;
-        this.ntpDelta = 0;
+        this.ntpDelta = 0; // NTP與本地時間差異，未使用
       }
 
+      // 防止螢幕烙印，微幅移動時鐘位置
       applyAntiBurnIn() {
-        const dx = (Math.random() * 2 - 1) * 1.5;
-        const dy = (Math.random() * 2 - 1) * 1.5;
+        const dx = (Math.random() * 2 - 1) * 1.5; // -1.5 ~ 1.5 vw
+        const dy = (Math.random() * 2 - 1) * 1.5; // -1.5 ~ 1.5 vh
         this.timeElement.style.transform = `translate(${dx}vw, ${dy}vh)`;
       }
 
+      // 更新時鐘文字
       updateTime() {
         const now = Date.now() + this.ntpDelta + this.offset;
         const date = new Date(now);
 
+        // 使用 UTC 小時、分鐘、秒 (已加時區偏移)
         const hh = date.getUTCHours().toString().padStart(2, '0');
         const mm = date.getUTCMinutes().toString().padStart(2, '0');
         const ss = date.getUTCSeconds().toString().padStart(2, '0');
 
         this.timeElement.textContent = `${hh}：${mm}：${ss}`;
 
+        // 計算下一次更新的時間（避免漂移）
         const delay = 1000 - (Date.now() % 1000);
         setTimeout(() => this.updateTime(), delay);
       }
 
+      // 儲存時區偏移（未來可用於NTP校準）
       saveOffset(offsetMs) {
         localStorage.setItem('tz_offset', offsetMs.toString());
         this.offset = offsetMs;
       }
 
+      // 初始化
       init() {
         this.updateTime();
         this.applyAntiBurnIn();
-        setInterval(() => this.applyAntiBurnIn(), 10000);
+        setInterval(() => this.applyAntiBurnIn(), 10000); // 每10秒微移一次
 
-        // 5 秒後開始淡出 opacity
+        // 5秒後開始淡出訊息
         setTimeout(() => {
           this.messageElement.classList.add('fade-out');
         }, 5000);
 
-        // 6 秒後完全隱藏，等 opacity 過渡完成
+        // 6秒後完全隱藏訊息元素
         setTimeout(() => {
           this.messageElement.style.display = 'none';
         }, 6000);
       }
     }
 
+    // 網頁載入完成後啟動時鐘
     document.addEventListener("DOMContentLoaded", () => {
       const clock = new NTPClock("time", "message");
       if (!localStorage.getItem("tz_offset")) {
-        clock.saveOffset(8 * 60 * 60 * 1000);
+        clock.saveOffset(8 * 60 * 60 * 1000); // 預設 UTC+8
       }
       clock.init();
     });
