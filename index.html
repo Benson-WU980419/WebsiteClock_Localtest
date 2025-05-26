@@ -91,15 +91,22 @@
         this.applyAntiBurnIn();
         setInterval(() => this.applyAntiBurnIn(), 10000);
 
-        // 5 秒後開始淡出 opacity
-        setTimeout(() => {
-          this.messageElement.classList.add('fade-out');
-        }, 5000);
+        const messageShown = localStorage.getItem('messageShown');
 
-        // 6 秒後完全隱藏，等 opacity 過渡完成
-        setTimeout(() => {
+        if (messageShown) {
+          // 已顯示過訊息，直接隱藏
           this.messageElement.style.display = 'none';
-        }, 6000);
+        } else {
+          // 第一次顯示，5 秒後淡出，6 秒後隱藏並標記
+          setTimeout(() => {
+            this.messageElement.classList.add('fade-out');
+          }, 5000);
+
+          setTimeout(() => {
+            this.messageElement.style.display = 'none';
+            localStorage.setItem('messageShown', 'true');
+          }, 6000);
+        }
       }
     }
 
