@@ -8,15 +8,33 @@ This is a digital clock website optimized for mobile browsers, especially iPhone
 
 ## 🌟 功能特色 | Features
 
-- 📱 **自適應設計 | Responsive design**：Supports iPhone full-screen mode with `viewport-fit=cover` for notch/safe-area compatibility.
-- 🕒 **本地時間顯示 | Local time display**：Automatically uses device time without NTP.
-- 💡 **防烙印設計 | Burn-in prevention**：Clock shifts slightly every 10 seconds to prevent screen burn-in.
-- 🌙 **夜間模式 | Night mode**：Black background with glowing orange text, easy on the eyes at night.
-- ⚙️ **PWA 支援 | PWA support**：
-  - Installable to home screen
-  - Works offline
+- 📱 **自適應設計 | Responsive design**  
+  支援 iPhone 全螢幕顯示，並使用 `viewport-fit=cover` 適應瀏海與安全區域。  
+  Supports iPhone full-screen mode with `viewport-fit=cover` for notch/safe-area compatibility.
+
+- 🕒 **本地時間顯示 | Local time display**  
+  自動使用裝置時間，不需連網或透過 NTP 校準。  
+  Automatically uses device time without NTP.
+
+- 💡 **防烙印設計 | Burn-in prevention**  
+  每 10 秒微幅移動時鐘文字，減少 OLED 螢幕烙印風險。  
+  Clock shifts slightly every 10 seconds to prevent screen burn-in.
+
+- 🌙 **夜間模式 | Night mode**  
+  黑底橘字，適合夜間或暗處長時間觀看。  
+  Black background with glowing orange text, easy on the eyes at night.
+
+- ⚙️ **PWA 支援 | PWA support**  
+  - 可安裝至主畫面  
+  - 離線可使用  
+  - 可作為獨立 App 運行  
+  - Installable to home screen  
+  - Works offline  
   - Launches as a standalone app
-- 🔒 **HTTPS 支援 | HTTPS enabled**（via GitHub Pages）
+
+- 🔒 **HTTPS 支援 | HTTPS enabled**  
+  透過 GitHub Pages 安全提供網站服務。  
+  Secured via GitHub Pages.
 
 ---
 
