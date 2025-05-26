@@ -39,6 +39,7 @@
       text-align: center;
       opacity: 1;
       transition: opacity 1s ease;
+      will-change: opacity;
     }
 
     /* 消失時用的 class */
@@ -91,12 +92,12 @@
         this.applyAntiBurnIn();
         setInterval(() => this.applyAntiBurnIn(), 10000);
 
-        // 讓「此時間以本地時間校準」訊息在 5 秒後淡出消失
+        // 5 秒後開始淡出 opacity
         setTimeout(() => {
           this.messageElement.classList.add('fade-out');
         }, 5000);
 
-        // 完全消失後隱藏該元素（避免影響排版）
+        // 6 秒後完全隱藏，等 opacity 過渡完成
         setTimeout(() => {
           this.messageElement.style.display = 'none';
         }, 6000);
