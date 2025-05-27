@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>iPhone 時鐘</title>
+  <link rel="manifest" href="manifest.json">
+  <link rel="apple-touch-icon" href="icon.png">
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      height: 100%;
+      background: black;
+      overflow: hidden;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+    }
+    #time {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate3d(-50%, -50%, 0);
+      font-size: 10vw;
+      color: white;
+      font-weight: 600;
+    }
+    #message {
+      position: absolute;
+      bottom: 5%;
+      width: 100%;
+      text-align: center;
+      color: #ccc;
+      font-size: 1.2rem;
+      opacity: 1;
+      transition: opacity 1s ease-in-out;
+    }
+    .fade-out {
+      opacity: 0 !important;
+    }
+  </style>
+</head>
+<body>
+  <div id="time">--：--：--</div>
+  <div id="message">正在同步時間...</div>
+  <script>
+    class NTPClock {
+      constructor(timeId, msgId) {
+        this.$time = document.getElementById(timeId);
+        this.$msg = document.getElementById(msgId);
+        this.tzOffset = parseInt(localStorage.getItem('tz_offset')) || this.DEFAULT_OFFSET;
+        this.ntpDelta = 0;
+      }
+
+      DEFAULT_OFFSET = 8 * 3600 * 1000;
+      BURNIN_DISTANCE = 1.5;
+      BURNIN_INTERVAL = 10000;
+      MSG_FADE_DELAY = 5000;
+      MSG_REMOVE_DELAY = 6000;
+
+      async init() {
+        this.saveOffsetIfNotSet();
+        await this.syncWithNTP();
+        this.updateTime();
+        this.applyBurnInShift();
+        this.burninTimer = setInterval(() => this.applyBurnInShift(), this.BURNIN_INTERVAL);
+        setTimeout(() => this.$msg.classList.add('fade-out'), this.MSG_FADE_DELAY);
+        setTimeout(() => this.$msg.remove(), this.MSG_REMOVE_DELAY);
+      }
+
+      async syncWithNTP() {
+        try {
+          const res = await fetch('https://your-subdomain.workers.dev', { cache: "no-store" });
+          const data = await res.json();
+          const serverTime = data.unixtime;
+          const localTime = Date.now();
+          this.ntpDelta = serverTime - localTime;
+          this.showMessage("以 NTP 時間校準成功");
+        } catch (e) {
+          console.error("NTP 校準失敗:", e);
+          this.ntpDelta = 0;
+          this.showMessage("⚠️ NTP 校準失敗，已改用本地時間");
+        }
+      }
+
+      showMessage(msg) {
+        this.$msg.textContent = msg;
+        this.$msg.classList.remove('fade-out');
+        setTimeout(() => this.$msg.classList.add('fade-out'), this.MSG_FADE_DELAY);
+        setTimeout(() => this.$msg.remove(), this.MSG_REMOVE_DELAY);
+      }
+
+      saveOffsetIfNotSet() {
+        if (!localStorage.getItem('tz_offset')) {
+          localStorage.setItem('tz_offset', this.DEFAULT_OFFSET);
+        }
+      }
+
+      applyBurnInShift() {
+        const dx = (Math.random() * 2 - 1) * this.BURNIN_DISTANCE;
+        const dy = (Math.random() * 2 - 1) * this.BURNIN_DISTANCE;
+        this.$time.style.transform = `translate3d(calc(-50% + ${dx}vw), calc(-50% + ${dy}vh), 0)`;
+      }
+
+      updateTime = () => {
+        const now = Date.now() + this.ntpDelta + this.tzOffset;
+        const d = new Date(now);
+        const hh = d.getUTCHours().toString().padStart(2, '0');
+        const mm = d.getUTCMinutes().toString().padStart(2, '0');
+        const ss = d.getUTCSeconds().toString().padStart(2, '0');
+        this.$time.textContent = `${hh}：${mm}：${ss}`;
+        const drift = now % 1000;
+        setTimeout(() => requestAnimationFrame(this.updateTime), 1000 - drift);
+      }
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      new NTPClock('time', 'message').init();
+
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('sw.js').catch(err => console.error('SW 註冊失敗:', err));
+      }
+    });
+  </script>
+</body>
+</html>
